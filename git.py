@@ -3,11 +3,10 @@ import os
 
 
 def run_command(command):
-    print(f"\n▶ {command}")
+    print(f"\n▶ {' '.join(command) if isinstance(command, list) else command}")
 
     result = subprocess.run(
         command,
-        shell=True,
         text=True,
         capture_output=True
     )
@@ -30,8 +29,9 @@ def load_config():
 
     with open(".gitconfig_project", "r") as file:
         for line in file:
-            key, value = line.strip().split("=")
-            config[key] = value
+            if line.strip():
+                key, value = line.strip().split("=", 1)
+                config[key] = value
 
     return config
 
@@ -39,7 +39,7 @@ def load_config():
 print("🚀 GitHub Auto Push Tool")
 
 
-# Load GitHub configuration
+# Load config
 config = load_config()
 
 repo_url = config["GITHUB_REPO"]
@@ -49,16 +49,15 @@ branch = config["BRANCH"]
 # Check git repository
 if not os.path.exists(".git"):
     print("❌ Not a git repository")
-    print("Run: git init")
     exit()
 
 
-# Show changes
-run_command("git status")
+# Show status
+run_command(["git", "status"])
 
 
 # Add files
-run_command("git add .")
+run_command(["git", "add", "."])
 
 
 # Commit message
@@ -67,16 +66,20 @@ commit_message = input(
 )
 
 
-# Commit
+# Commit safely
 commit_result = run_command(
-    f'git commit -m "{commit_message}"'
+    ["git", "commit", "-m", commit_message]
 )
 
 
-# Add remote if not exists
+if commit_result != 0:
+    print("\n❌ Commit failed. Push cancelled.")
+    exit()
+
+
+# Check remote
 remote = subprocess.run(
-    "git remote",
-    shell=True,
+    ["git", "remote"],
     text=True,
     capture_output=True
 )
@@ -85,8 +88,9 @@ remote = subprocess.run(
 if "origin" not in remote.stdout:
 
     print("\n🔗 Adding GitHub remote...")
+
     run_command(
-        f"git remote add origin {repo_url}"
+        ["git", "remote", "add", "origin", repo_url]
     )
 
 else:
@@ -95,18 +99,19 @@ else:
 
 # Set branch
 run_command(
-    f"git branch -M {branch}"
+    ["git", "branch", "-M", branch]
 )
 
 
 # Push
 print("\n🚀 Pushing code to GitHub...")
 
-run_command(
-    f"git push -u origin {branch}"
+push_result = run_command(
+    ["git", "push", "-u", "origin", branch]
 )
 
 
-print(
-    "\n✅ Successfully pushed to GitHub!"
-)
+if push_result == 0:
+    print("\n✅ Successfully pushed to GitHub!")
+else:
+    print("\n❌ Push failed")

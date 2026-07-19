@@ -1,0 +1,328 @@
+# RAG Project Design Summary (Interview Cheat Sheet)
+
+Whenever you are assigned a new RAG project, don't start coding immediately. Follow this simple framework.
+
+---
+
+# Step 1: Understand the Business Problem
+
+**Question:**
+
+> What problem am I solving?
+
+### Example
+
+Business says:
+
+> "Employees cannot quickly search Microsoft Fabric documentation."
+
+**Goal:**
+
+Build an AI assistant that answers questions from Microsoft Fabric PDFs.
+
+---
+
+# Step 2: Identify the Data Source
+
+**Question:**
+
+> Where is the data?
+
+Examples:
+
+* PDF
+* Word
+* SharePoint
+* Confluence
+* SQL Database
+* Azure Blob Storage
+* Website
+
+### Example
+
+```text
+Data Source:
+fabric-onelake.pdf
+fabric-admin.pdf
+```
+
+---
+
+# Step 3: Choose the Document Loader
+
+**Question:**
+
+> How will I read the documents?
+
+Examples:
+
+| Data    | Loader         |
+| ------- | -------------- |
+| PDF     | PyPDFLoader    |
+| CSV     | CSVLoader      |
+| Word    | Docx2txtLoader |
+| Website | WebBaseLoader  |
+
+### Example
+
+```python
+loader = PyPDFLoader("fabric-onelake.pdf")
+
+documents = loader.load()
+```
+
+---
+
+# Step 4: Add Metadata
+
+**Question:**
+
+> What information should be stored with every document?
+
+Example:
+
+```python
+doc.metadata = {
+    "department": "Data Engineering",
+    "document": "Fabric Guide",
+    "version": "2025"
+}
+```
+
+Metadata helps filter documents later.
+
+---
+
+# Step 5: Chunk the Documents
+
+**Question:**
+
+> How should I split the document?
+
+Example
+
+```python
+RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=100
+)
+```
+
+Result
+
+```text
+382 Pages
+
+↓
+
+650 Chunks
+```
+
+Why?
+
+LLMs cannot efficiently process a huge PDF as one block of text.
+
+---
+
+# Step 6: Create Embeddings
+
+**Question:**
+
+> Which embedding model should I use?
+
+Example
+
+```python
+OpenAIEmbeddings(
+    model="text-embedding-3-small"
+)
+```
+
+Converts
+
+```text
+"What is OneLake?"
+```
+
+into
+
+```text
+[0.22, -0.45, 0.91, ...]
+```
+
+---
+
+# Step 7: Store in a Vector Database
+
+**Question:**
+
+> Where will I store embeddings?
+
+Examples
+
+* Chroma
+* Pinecone
+* Weaviate
+* Milvus
+* Azure AI Search
+
+Example
+
+```python
+vectordb = Chroma.from_documents(...)
+```
+
+---
+
+# Step 8: Retrieve Relevant Chunks
+
+**Question:**
+
+> How will I find the most relevant information?
+
+Example
+
+```python
+vectordb.similarity_search(
+    question,
+    k=3
+)
+```
+
+Output
+
+```text
+Top 3 Similar Chunks
+```
+
+---
+
+# Step 9: Build the Prompt
+
+**Question:**
+
+> How will I give context to the LLM?
+
+Example
+
+```text
+Context:
+
+<Retrieved Chunks>
+
+Question:
+
+What is OneLake?
+```
+
+---
+
+# Step 10: Generate the Answer
+
+**Question:**
+
+> Which LLM will answer?
+
+Example
+
+```python
+llm = ChatOpenAI(
+    model="gpt-5-nano"
+)
+```
+
+---
+
+# Step 11: Evaluate the Results
+
+Check:
+
+* Is the answer correct?
+* Did retrieval find the right chunks?
+* Is the source correct?
+* Did the model hallucinate?
+
+---
+
+# Step 12: Deploy the Solution
+
+Possible deployment options:
+
+* FastAPI
+* Streamlit
+* Docker
+* Azure
+* Databricks
+
+---
+
+# Complete RAG Design Flow
+
+```text
+Business Requirement
+        │
+        ▼
+Identify Data Source
+        │
+        ▼
+Document Loader
+        │
+        ▼
+Metadata
+        │
+        ▼
+Chunking
+        │
+        ▼
+Embeddings
+        │
+        ▼
+Vector Database
+        │
+        ▼
+Similarity Search
+        │
+        ▼
+Prompt Engineering
+        │
+        ▼
+LLM
+        │
+        ▼
+Final Answer
+```
+
+---
+
+# Real Example (Microsoft Fabric Assistant)
+
+Imagine your manager says:
+
+> **"Build an AI assistant that answers questions from Microsoft Fabric documentation."**
+
+You would design it like this:
+
+| Step             | Decision                                 |
+| ---------------- | ---------------------------------------- |
+| Business Problem | Search Microsoft Fabric documentation    |
+| Data Source      | `fabric-onelake.pdf`, `fabric-admin.pdf` |
+| Loader           | `PyPDFLoader`                            |
+| Metadata         | Document name, version, category         |
+| Chunking         | `chunk_size=1000`, `chunk_overlap=100`   |
+| Embeddings       | `text-embedding-3-small`                 |
+| Vector Database  | ChromaDB                                 |
+| Retrieval        | `similarity_search(k=3)`                 |
+| Prompt           | Context + Question                       |
+| LLM              | GPT-5 Nano                               |
+| Output           | Answer + Source pages                    |
+
+---
+
+# Interview Answer (30 Seconds)
+
+> "When designing a RAG system, I first understand the business problem and identify the data source. Then I choose the appropriate document loader, enrich documents with metadata, 
+> split them into chunks, generate embeddings, and store them in a vector database. 
+> At query time, I convert the user's question into an embedding, retrieve the most relevant chunks using semantic search, build a prompt containing those chunks, 
+> and send it to an LLM to generate a grounded answer. Finally, I evaluate the results and deploy the solution based on the project's requirements."
+
+This concise explanation demonstrates that you understand both the architecture and the reasoning behind each stage.
